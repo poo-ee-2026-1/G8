@@ -1,5 +1,5 @@
 # G8
-Discentes: Jean Gabriel, Vinicius Alves e Davi Mariano. 
+Discentes: Jean Gabriel, Gabriel Arthur e Davi Mariano. 
 
 
 Projeto POO
