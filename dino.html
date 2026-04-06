@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dino Clone - Estudo</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f2f2f2;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 30px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    #game {
+      position: relative;
+      width: 900px;
+      height: 300px;
+      background-color: white;
+      border: 3px solid #222;
+      overflow: hidden;
+    }
+
+    #ground {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 40px;
+      background-color: #444;
+    }
+
+    #player {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background-color: green;
+      left: 100px;
+      bottom: 40px;
+    }
+
+    .obstacle {
+      position: absolute;
+      width: 30px;
+      height: 60px;
+      background-color: darkred;
+      bottom: 40px;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #startMessage,
+    #gameOverMessage {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      top: 100px;
+      color: #222;
+    }
+
+    #gameOverMessage {
+      display: none;
+      color: red;
+    }
+
+    #instructions {
+      margin-top: 20px;
+      font-size: 18px;
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Dino Clone</h1>
+
+  <div id="game">
+    <div id="ground"></div>
+    <div id="player"></div>
+    <div id="score">Score: 0</div>
+    <div id="startMessage">Pressione ESPAÇO para começar</div>
+    <div id="gameOverMessage">GAME OVER<br>Pressione ENTER para reiniciar</div>
+  </div>
+
+  <div id="instructions">
+    <p><strong>ESPAÇO</strong> = iniciar / pular</p>
+    <p><strong>ENTER</strong> = reiniciar após perder</p>
+  </div>
+
+  <script>
+    // =========================
+    // PEGANDO ELEMENTOS DA TELA
+    // =========================
+    const game = document.getElementById("game");
+    const player = document.getElementById("player");
+    const scoreDisplay = document.getElementById("score");
+    const startMessage = document.getElementById("startMessage");
+    const gameOverMessage = document.getElementById("gameOverMessage");
+
+    // =========================
+    // ESTADO GERAL DO JOGO
+    // =========================
+    let gameStarted = false;
+    let gameOver = false;
+    let score = 0;
+    let gameSpeed = 6;
+
+    // =========================
+    // ESTADO DO JOGADOR
+    // =========================
+    let playerY = 40;      // altura atual do jogador
+    let velocityY = 0;     // velocidade vertical
+    let gravity = 0.8;     // gravidade
+    let jumpForce = 15;    // força do pulo
+    let isJumping = false; // se está no ar
+
+    // =========================
+    // LISTA DE OBSTÁCULOS
+    // =========================
+    let obstacles = [];
+    let obstacleSpawnTimer = 0;
+    let obstacleSpawnInterval = 90;
+
+    // =========================
+    // TECLADO
+    // =========================
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space") {
+        event.preventDefault();
+
+        // Se ainda não começou, começa
+        if (!gameStarted) {
+          startGame();
+          return;
+        }
+
+        // Se já começou e não está pulando, pula
+        if (!isJumping && !gameOver) {
+          jump();
+        }
+      }
+
+      // Reiniciar após perder
+      if (event.code === "Enter" && gameOver) {
+        restartGame();
+      }
+    });
+
+    // =========================
+    // COMEÇAR JOGO
+    // =========================
+    function startGame() {
+      gameStarted = true;
+      startMessage.style.display = "none";
+      requestAnimationFrame(gameLoop);
+    }
+
+    // =========================
+    // PULO
+    // =========================
+    function jump() {
+      velocityY = jumpForce;
+      isJumping = true;
+    }
+
+    // =========================
+    // ATUALIZAR JOGADOR
+    // =========================
+    function updatePlayer() {
+      velocityY -= gravity;
+      playerY += velocityY;
+
+      // Não deixar passar do chão
+      if (playerY <= 40) {
+        playerY = 40;
+        velocityY = 0;
+        isJumping = false;
+      }
+
+      player.style.bottom = playerY + "px";
+    }
+
+    // =========================
+    // CRIAR OBSTÁCULO
+    // =========================
+    function createObstacle() {
+      const obstacle = document.createElement("div");
+      obstacle.classList.add("obstacle");
+
+      // Altura aleatória
+      const randomHeight = Math.random() > 0.5 ? 50 : 70;
+      obstacle.style.height = randomHeight + "px";
+      obstacle.style.left = "900px";
+
+      game.appendChild(obstacle);
+
+      obstacles.push({
+        element: obstacle,
+        x: 900
+      });
+    }
+
+    // =========================
+    // ATUALIZAR OBSTÁCULOS
+    // =========================
+    function updateObstacles() {
+      obstacleSpawnTimer++;
+
+      // Criar novos obstáculos em intervalos
+      if (obstacleSpawnTimer >= obstacleSpawnInterval) {
+        createObstacle();
+        obstacleSpawnTimer = 0;
+
+        // Pequena aleatoriedade no tempo de spawn
+        obstacleSpawnInterval = Math.floor(Math.random() * 40) + 80;
+      }
+
+      // Mover todos os obstáculos
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].x -= gameSpeed;
+        obstacles[i].element.style.left = obstacles[i].x + "px";
+
+        // Se saiu da tela, remove e soma ponto
+        if (obstacles[i].x < -50) {
+          obstacles[i].element.remove();
+          obstacles.splice(i, 1);
+          score++;
+          scoreDisplay.textContent = "Score: " + score;
+        }
+      }
+    }
+
+    // =========================
+    // COLISÃO
+    // =========================
+    function checkCollision() {
+      const playerRect = player.getBoundingClientRect();
+
+      for (let obstacle of obstacles) {
+        const obstacleRect = obstacle.element.getBoundingClientRect();
+
+        if (
+          playerRect.left < obstacleRect.right &&
+          playerRect.right > obstacleRect.left &&
+          playerRect.top < obstacleRect.bottom &&
+          playerRect.bottom > obstacleRect.top
+        ) {
+          endGame();
+        }
+      }
+    }
+
+    // =========================
+    // AUMENTAR DIFICULDADE
+    // =========================
+    function updateDifficulty() {
+      gameSpeed = 6 + Math.floor(score / 5);
+    }
+
+    // =========================
+    // GAME OVER
+    // =========================
+    function endGame() {
+      gameOver = true;
+      gameOverMessage.style.display = "block";
+    }
+
+    // =========================
+    // REINICIAR
+    // =========================
+    function restartGame() {
+      // Remove obstáculos da tela
+      for (let obstacle of obstacles) {
+        obstacle.element.remove();
+      }
+
+      obstacles = [];
+      gameOver = false;
+      gameStarted = false;
+      score = 0;
+      gameSpeed = 6;
+      obstacleSpawnTimer = 0;
+      obstacleSpawnInterval = 90;
+
+      playerY = 40;
+      velocityY = 0;
+      isJumping = false;
+      player.style.bottom = playerY + "px";
+
+      scoreDisplay.textContent = "Score: 0";
+      gameOverMessage.style.display = "none";
+      startMessage.style.display = "block";
+    }
+
+    // =========================
+    // LOOP PRINCIPAL
+    // =========================
+    function gameLoop() {
+      if (gameOver || !gameStarted) return;
+
+      updatePlayer();
+      updateObstacles();
+      checkCollision();
+      updateDifficulty();
+
+      requestAnimationFrame(gameLoop);
+    }
+  </script>
+
+</body>
+</html>
