@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -5,21 +6,50 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 
+import javax.sound.sampled.*;
+import java.io.File;
+
 // ================= MAIN =================
 public class Main extends JPanel implements ActionListener, KeyListener {
 
     Timer timer;
+
     Elefante jogador;
+
     ArrayList<Entidade> entidades;
+
     Random random = new Random();
 
     boolean rodando = true;
 
+    // ================= MÚSICA =================
+    Clip musica;
+
+    boolean musicaMutada = false;
+
+    int opcaoSettings = 0;
+
+    String[] opcoesSettings = {
+            "Mute Music: OFF"
+    };
+
+    // ================= ESTADOS =================
+    enum Estado {
+        MENU,
+        CHARACTER_SELECT,
+        SETTINGS,
+        PLAYING,
+        LAWYER_DEVELOPING
+    }
+
+    Estado estadoAtual = Estado.MENU;
+
     // ================= SCORE =================
     int pontuacao = 0;
+
     long ultimoPontoTempo = System.currentTimeMillis();
 
-    // ================= TEMPO DE JOGO =================
+    // ================= TEMPO =================
     long inicioJogo;
 
     // ================= VELOCIDADE =================
@@ -28,18 +58,88 @@ public class Main extends JPanel implements ActionListener, KeyListener {
     // ================= BALANCEAMENTO =================
     int distanciaMinimaObstaculos = 220;
 
+    // ================= MENU =================
+    int opcaoMenu = 0;
+
+    String[] menuPrincipal = {
+            "Play",
+            "Settings"
+    };
+
+    int opcaoPersonagem = 0;
+
+    String[] personagens = {
+            "Elefante",
+            "Lawyer"
+    };
+
     public Main() {
 
         setPreferredSize(new Dimension(800, 400));
-        setBackground(Color.BLACK);
 
         addKeyListener(this);
+
         setFocusable(true);
 
-        iniciarJogo();
-
         timer = new Timer(16, this);
+
         timer.start();
+
+        tocarMusica();
+    }
+
+    // ================= MÚSICA =================
+    void tocarMusica() {
+
+        try {
+
+            AudioInputStream audio =
+                    AudioSystem.getAudioInputStream(
+                            new File("0518(1).WAV")
+                    );
+
+            musica = AudioSystem.getClip();
+
+            musica.open(audio);
+
+            musica.loop(Clip.LOOP_CONTINUOUSLY);
+
+            musica.start();
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "Erro ao tocar música: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    void atualizarEstadoMusica() {
+
+        if (musicaMutada) {
+
+            opcoesSettings[0] =
+                    "Mute Music: ON";
+
+            if (musica != null) {
+
+                musica.stop();
+            }
+
+        } else {
+
+            opcoesSettings[0] =
+                    "Mute Music: OFF";
+
+            if (musica != null &&
+                    !musica.isRunning()) {
+
+                musica.loop(Clip.LOOP_CONTINUOUSLY);
+
+                musica.start();
+            }
+        }
     }
 
     // ================= INICIAR JOGO =================
@@ -48,6 +148,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         jogador = new Elefante(100, 236);
 
         entidades = new ArrayList<>();
+
         entidades.add(jogador);
 
         pontuacao = 0;
@@ -59,6 +160,8 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         multiplicadorVelocidade = 1.0;
 
         rodando = true;
+
+        estadoAtual = Estado.PLAYING;
     }
 
     public static void main(String[] args) {
@@ -68,6 +171,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         Main jogo = new Main();
 
         frame.add(jogo);
+
         frame.pack();
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -80,13 +184,13 @@ public class Main extends JPanel implements ActionListener, KeyListener {
     @Override
     public void actionPerformed(ActionEvent e) {
 
-        if (!rodando) {
+        if (estadoAtual == Estado.PLAYING) {
 
-            repaint();
-            return;
+            if (rodando) {
+
+                atualizar();
+            }
         }
-
-        atualizar();
 
         repaint();
     }
@@ -94,36 +198,30 @@ public class Main extends JPanel implements ActionListener, KeyListener {
     // ================= UPDATE =================
     void atualizar() {
 
-        // ================= SCORE =================
-
         long tempoAtual = System.currentTimeMillis();
 
         long segundos = (tempoAtual - inicioJogo) / 1000;
 
         // ================= VELOCIDADE DINÂMICA =================
 
-        /*
-            0s  -> 1x
-            10s -> 2x
-            60s -> 4x
-        */
-
         if (segundos <= 10) {
 
             multiplicadorVelocidade =
-                1.0 + (segundos / 10.0);
+                    1.0 + (segundos / 10.0);
 
         } else if (segundos <= 60) {
 
             multiplicadorVelocidade =
-                2.0 + ((segundos - 10) / 50.0) * 2.0;
+                    2.0 + ((segundos - 10) / 50.0) * 2.0;
 
         } else {
 
-            multiplicadorVelocidade = 4.0;
+            multiplicadorVelocidade =
+                    4.0 + Math.log(segundos - 59) * 0.7;
         }
 
-        // +1 ponto por segundo
+        // ================= SCORE =================
+
         if (tempoAtual - ultimoPontoTempo >= 1000) {
 
             pontuacao++;
@@ -131,7 +229,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             ultimoPontoTempo = tempoAtual;
         }
 
-        // ================= SPAWN BALANCEADO =================
+        // ================= SPAWN OBSTÁCULO =================
 
         if (random.nextInt(100) < 2) {
 
@@ -144,6 +242,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
                     if (ent.x > 800 - distanciaMinimaObstaculos) {
 
                         podeSpawnar = false;
+
                         break;
                     }
                 }
@@ -152,25 +251,25 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             if (podeSpawnar) {
 
                 entidades.add(
-                    new Obstaculo(
-                        800,
-                        300,
-                        multiplicadorVelocidade
-                    )
+                        new Obstaculo(
+                                800,
+                                300,
+                                multiplicadorVelocidade
+                        )
                 );
             }
         }
 
         // ================= SPAWN RAIO =================
 
-        if (random.nextInt(250) < 2) {
+        if (random.nextInt(700) < 1) {
 
             entidades.add(
-                new Raio(
-                    800,
-                    250,
-                    multiplicadorVelocidade
-                )
+                    new Raio(
+                            800,
+                            250,
+                            multiplicadorVelocidade
+                    )
             );
         }
 
@@ -182,51 +281,37 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
             ent.atualizar();
 
-            // Remove fora da tela
             if (ent.x < -100) {
 
                 it.remove();
+
                 continue;
             }
 
             // ================= COLISÃO =================
 
             if (ent != jogador &&
-                ent.getBounds().intersects(jogador.getBounds())) {
+                    ent.getBounds().intersects(jogador.getBounds())) {
 
                 // ================= OBSTÁCULO =================
 
                 if (ent instanceof Obstaculo) {
 
-                    // Intangível
                     if (jogador.intangivel) {
 
                         jogador.blocosAtravessados++;
 
-                        System.out.println(
-                            "Bloco atravessado: "
-                            + jogador.blocosAtravessados
-                            + "/3"
-                        );
-
-                        // Acaba após 3 blocos
                         if (jogador.blocosAtravessados >= 3) {
 
                             jogador.intangivel = false;
-
-                            System.out.println(
-                                "Intangibilidade acabou!"
-                            );
                         }
 
                         it.remove();
+
                         continue;
                     }
 
-                    // Morte
                     rodando = false;
-
-                    System.out.println("Game Over");
                 }
 
                 // ================= RAIO =================
@@ -247,13 +332,223 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         super.paintComponent(g);
 
-        // ================= CÉU =================
+        // ================= MENU =================
+
+        if (estadoAtual == Estado.MENU) {
+
+            desenharMenu(g);
+
+            return;
+        }
+
+        // ================= SELECT =================
+
+        if (estadoAtual == Estado.CHARACTER_SELECT) {
+
+            desenharSelecao(g);
+
+            return;
+        }
+
+        // ================= SETTINGS =================
+
+        if (estadoAtual == Estado.SETTINGS) {
+
+            desenharSettings(g);
+
+            return;
+        }
+
+        // ================= LAWYER =================
+
+        if (estadoAtual == Estado.LAWYER_DEVELOPING) {
+
+            desenharLawyer(g);
+
+            return;
+        }
+
+        // ================= JOGO =================
+
+        desenharJogo(g);
+    }
+
+    // ================= MENU =================
+    void desenharMenu(Graphics g) {
+
+        g.setColor(Color.BLACK);
+
+        g.fillRect(0, 0, 800, 400);
+
+        g.setColor(Color.WHITE);
+
+        g.setFont(new Font("Arial", Font.BOLD, 42));
+
+        g.drawString("ELEPHANT RUN", 240, 100);
+
+        g.setFont(new Font("Arial", Font.BOLD, 28));
+
+        for (int i = 0; i < menuPrincipal.length; i++) {
+
+            if (i == opcaoMenu) {
+
+                g.setColor(Color.YELLOW);
+
+            } else {
+
+                g.setColor(Color.WHITE);
+            }
+
+            g.drawString(
+                    menuPrincipal[i],
+                    340,
+                    180 + (i * 60)
+            );
+        }
+
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+
+        g.setColor(Color.LIGHT_GRAY);
+
+        g.drawString(
+                "Use ↑ ↓ e ENTER",
+                300,
+                340
+        );
+    }
+
+    // ================= SELECT =================
+    void desenharSelecao(Graphics g) {
+
+        g.setColor(new Color(20, 20, 20));
+
+        g.fillRect(0, 0, 800, 400);
+
+        g.setColor(Color.WHITE);
+
+        g.setFont(new Font("Arial", Font.BOLD, 36));
+
+        g.drawString(
+                "Choose Character",
+                240,
+                90
+        );
+
+        g.setFont(new Font("Arial", Font.BOLD, 28));
+
+        for (int i = 0; i < personagens.length; i++) {
+
+            if (i == opcaoPersonagem) {
+
+                g.setColor(Color.CYAN);
+
+            } else {
+
+                g.setColor(Color.WHITE);
+            }
+
+            g.drawString(
+                    personagens[i],
+                    320,
+                    180 + (i * 60)
+            );
+        }
+
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+
+        g.setColor(Color.LIGHT_GRAY);
+
+        g.drawString(
+                "ESC para voltar",
+                310,
+                340
+        );
+    }
+
+    // ================= SETTINGS =================
+    void desenharSettings(Graphics g) {
+
+        g.setColor(Color.DARK_GRAY);
+
+        g.fillRect(0, 0, 800, 400);
+
+        g.setColor(Color.WHITE);
+
+        g.setFont(new Font("Arial", Font.BOLD, 40));
+
+        g.drawString("SETTINGS", 270, 100);
+
+        g.setFont(new Font("Arial", Font.BOLD, 26));
+
+        for (int i = 0; i < opcoesSettings.length; i++) {
+
+            if (i == opcaoSettings) {
+
+                g.setColor(Color.YELLOW);
+
+            } else {
+
+                g.setColor(Color.WHITE);
+            }
+
+            g.drawString(
+                    opcoesSettings[i],
+                    250,
+                    190 + (i * 50)
+            );
+        }
+
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+
+        g.setColor(Color.LIGHT_GRAY);
+
+        g.drawString(
+                "ENTER para alterar",
+                270,
+                300
+        );
+
+        g.drawString(
+                "ESC para voltar",
+                290,
+                330
+        );
+    }
+
+    // ================= LAWYER =================
+    void desenharLawyer(Graphics g) {
+
+        g.setColor(Color.BLACK);
+
+        g.fillRect(0, 0, 800, 400);
+
+        g.setColor(Color.ORANGE);
+
+        g.setFont(new Font("Arial", Font.BOLD, 42));
+
+        g.drawString(
+                "Developing...",
+                240,
+                180
+        );
+
+        g.setFont(new Font("Arial", Font.PLAIN, 24));
+
+        g.setColor(Color.WHITE);
+
+        g.drawString(
+                "Press ESC para voltar",
+                250,
+                250
+        );
+    }
+
+    // ================= JOGO =================
+    void desenharJogo(Graphics g) {
 
         g.setColor(new Color(198, 226, 255));
 
         g.fillRect(0, 0, 800, 400);
-
-        // ================= CHÃO =================
 
         g.setColor(new Color(60, 60, 60));
 
@@ -263,33 +558,23 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         g.drawLine(0, 340, 800, 340);
 
-        // ================= SCORE =================
-
-        g.setColor(Color.WHITE);
-
         g.setFont(new Font("Arial", Font.BOLD, 24));
 
         g.drawString("Score: " + pontuacao, 20, 40);
 
-        // ================= VELOCIDADE =================
-
         g.setFont(new Font("Arial", Font.PLAIN, 18));
 
         g.drawString(
-            "Velocidade: x"
-            + String.format("%.1f", multiplicadorVelocidade),
-            20,
-            70
+                "Velocidade: x"
+                        + String.format("%.1f", multiplicadorVelocidade),
+                20,
+                70
         );
-
-        // ================= ENTIDADES =================
 
         for (Entidade e : entidades) {
 
             e.desenhar(g);
         }
-
-        // ================= PODER =================
 
         if (jogador.intangivel) {
 
@@ -298,15 +583,13 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             g.setFont(new Font("Arial", Font.BOLD, 18));
 
             g.drawString(
-                "INTANGÍVEL: "
-                + (3 - jogador.blocosAtravessados)
-                + " blocos restantes",
-                20,
-                100
+                    "INTANGÍVEL: "
+                            + (3 - jogador.blocosAtravessados)
+                            + " blocos restantes",
+                    20,
+                    100
             );
         }
-
-        // ================= GAME OVER =================
 
         if (!rodando) {
 
@@ -319,36 +602,168 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             g.setFont(new Font("Arial", Font.PLAIN, 22));
 
             g.drawString(
-                "Press SPACE to Restart",
-                235,
-                220
+                    "Press SPACE to Restart",
+                    235,
+                    220
             );
         }
     }
 
-    // ================= CONTROLE =================
+    // ================= CONTROLES =================
     @Override
     public void keyPressed(KeyEvent e) {
 
-        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+        int tecla = e.getKeyCode();
 
-            // Reinicia jogo
-            if (!rodando) {
+        if (estadoAtual == Estado.MENU) {
 
-                iniciarJogo();
+            if (tecla == KeyEvent.VK_UP) {
 
-                return;
+                opcaoMenu--;
+
+                if (opcaoMenu < 0) {
+
+                    opcaoMenu = menuPrincipal.length - 1;
+                }
             }
 
-            // Pulo
-            jogador.pular();
+            if (tecla == KeyEvent.VK_DOWN) {
+
+                opcaoMenu++;
+
+                if (opcaoMenu >= menuPrincipal.length) {
+
+                    opcaoMenu = 0;
+                }
+            }
+
+            if (tecla == KeyEvent.VK_ENTER) {
+
+                if (opcaoMenu == 0) {
+
+                    estadoAtual = Estado.CHARACTER_SELECT;
+                }
+
+                if (opcaoMenu == 1) {
+
+                    estadoAtual = Estado.SETTINGS;
+                }
+            }
+        }
+
+        else if (estadoAtual == Estado.CHARACTER_SELECT) {
+
+            if (tecla == KeyEvent.VK_UP) {
+
+                opcaoPersonagem--;
+
+                if (opcaoPersonagem < 0) {
+
+                    opcaoPersonagem =
+                            personagens.length - 1;
+                }
+            }
+
+            if (tecla == KeyEvent.VK_DOWN) {
+
+                opcaoPersonagem++;
+
+                if (opcaoPersonagem >= personagens.length) {
+
+                    opcaoPersonagem = 0;
+                }
+            }
+
+            if (tecla == KeyEvent.VK_ENTER) {
+
+                if (opcaoPersonagem == 0) {
+
+                    iniciarJogo();
+                }
+
+                if (opcaoPersonagem == 1) {
+
+                    estadoAtual =
+                            Estado.LAWYER_DEVELOPING;
+                }
+            }
+
+            if (tecla == KeyEvent.VK_ESCAPE) {
+
+                estadoAtual = Estado.MENU;
+            }
+        }
+
+        else if (estadoAtual == Estado.SETTINGS) {
+
+            if (tecla == KeyEvent.VK_UP) {
+
+                opcaoSettings--;
+
+                if (opcaoSettings < 0) {
+
+                    opcaoSettings =
+                            opcoesSettings.length - 1;
+                }
+            }
+
+            if (tecla == KeyEvent.VK_DOWN) {
+
+                opcaoSettings++;
+
+                if (opcaoSettings >=
+                        opcoesSettings.length) {
+
+                    opcaoSettings = 0;
+                }
+            }
+
+            if (tecla == KeyEvent.VK_ENTER) {
+
+                if (opcaoSettings == 0) {
+
+                    musicaMutada = !musicaMutada;
+
+                    atualizarEstadoMusica();
+                }
+            }
+
+            if (tecla == KeyEvent.VK_ESCAPE) {
+
+                estadoAtual = Estado.MENU;
+            }
+        }
+
+        else if (estadoAtual == Estado.LAWYER_DEVELOPING) {
+
+            if (tecla == KeyEvent.VK_ESCAPE) {
+
+                estadoAtual = Estado.CHARACTER_SELECT;
+            }
+        }
+
+        else if (estadoAtual == Estado.PLAYING) {
+
+            if (tecla == KeyEvent.VK_SPACE) {
+
+                if (!rodando) {
+
+                    iniciarJogo();
+
+                    return;
+                }
+
+                jogador.pular();
+            }
         }
     }
 
-    @Override public void keyReleased(KeyEvent e) {}
-    @Override public void keyTyped(KeyEvent e) {}
-}
+    @Override
+    public void keyReleased(KeyEvent e) {}
 
+    @Override
+    public void keyTyped(KeyEvent e) {}
+}
 
 // ================= ENTIDADE =================
 abstract class Entidade {
@@ -370,14 +785,13 @@ abstract class Entidade {
     Rectangle getBounds() {
 
         return new Rectangle(
-            x,
-            y,
-            largura,
-            altura
+                x,
+                y,
+                largura,
+                altura
         );
     }
 }
-
 
 // ================= PERSONAGEM =================
 class Personagem extends Entidade {
@@ -410,7 +824,6 @@ class Personagem extends Entidade {
 
         y += velY;
 
-        // Chão
         if (y >= 236) {
 
             y = 236;
@@ -430,13 +843,11 @@ class Personagem extends Entidade {
     }
 }
 
-
 // ================= ELEFANTE =================
 class Elefante extends Personagem {
 
     boolean habilidadeAtiva = false;
 
-    // PODER
     boolean intangivel = false;
 
     int blocosAtravessados = 0;
@@ -453,53 +864,42 @@ class Elefante extends Personagem {
         intangivel = true;
 
         blocosAtravessados = 0;
-
-        System.out.println("Raio coletado!");
-
-        System.out.println("Elefante intangível!");
     }
 
-    // ================= HITBOX MENOR =================
     @Override
     Rectangle getBounds() {
 
         return new Rectangle(
-            x + 18,
-            y + 18,
-            52,
-            70
+                x + 18,
+                y + 18,
+                52,
+                70
         );
     }
 
     @Override
     void desenhar(Graphics g) {
 
-        // Corpo principal
         g.setColor(new Color(170, 175, 195));
 
         g.fillRect(x + 18, y + 18, 52, 44);
 
-        // Cabeça
         g.fillRect(x + 56, y + 22, 28, 32);
 
-        // Orelha
         g.setColor(new Color(150, 155, 175));
 
         g.fillRect(x + 40, y + 10, 20, 34);
 
-        // Pernas
         g.setColor(new Color(170, 175, 195));
 
         g.fillRect(x + 24, y + 56, 14, 34);
 
         g.fillRect(x + 54, y + 56, 14, 34);
 
-        // Tromba
         g.fillRect(x + 66, y + 44, 12, 24);
 
         g.fillRect(x + 58, y + 58, 20, 10);
 
-        // Contorno
         g.setColor(Color.BLACK);
 
         g.drawRect(x + 18, y + 18, 52, 44);
@@ -516,26 +916,23 @@ class Elefante extends Personagem {
 
         g.drawRect(x + 58, y + 58, 20, 10);
 
-        // Olho
         g.fillRect(x + 70, y + 30, 4, 8);
 
-        // Aura
         if (intangivel) {
 
             g.setColor(
-                new Color(0, 255, 255, 80)
+                    new Color(0, 255, 255, 80)
             );
 
             g.fillOval(
-                x - 10,
-                y - 10,
-                120,
-                120
+                    x - 10,
+                    y - 10,
+                    120,
+                    120
             );
         }
     }
 }
-
 
 // ================= OBSTÁCULO =================
 class Obstaculo extends Entidade {
@@ -543,9 +940,9 @@ class Obstaculo extends Entidade {
     double velocidade;
 
     Obstaculo(
-        int x,
-        int y,
-        double multiplicador
+            int x,
+            int y,
+            double multiplicador
     ) {
 
         super(x, y, 30, 40);
@@ -572,7 +969,6 @@ class Obstaculo extends Entidade {
     }
 }
 
-
 // ================= ITEM =================
 abstract class Item extends Entidade {
 
@@ -584,16 +980,15 @@ abstract class Item extends Entidade {
     abstract void coletar(Personagem p);
 }
 
-
 // ================= RAIO =================
 class Raio extends Item {
 
     double velocidade;
 
     Raio(
-        int x,
-        int y,
-        double multiplicador
+            int x,
+            int y,
+            double multiplicador
     ) {
 
         super(x, y);
@@ -613,21 +1008,21 @@ class Raio extends Item {
         g.setColor(Color.YELLOW);
 
         int[] xs = {
-            x + 10,
-            x + 4,
-            x + 12,
-            x + 8,
-            x + 16,
-            x + 10
+                x + 10,
+                x + 4,
+                x + 12,
+                x + 8,
+                x + 16,
+                x + 10
         };
 
         int[] ys = {
-            y,
-            y + 10,
-            y + 10,
-            y + 20,
-            y + 20,
-            y + 30
+                y,
+                y + 10,
+                y + 10,
+                y + 20,
+                y + 20,
+                y + 30
         };
 
         g.fillPolygon(xs, ys, xs.length);
@@ -642,5 +1037,4 @@ class Raio extends Item {
         }
     }
 }
-
 
