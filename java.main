@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -22,6 +21,16 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
     boolean rodando = true;
 
+    // ================= NUVENS =================
+    double[] nuvensX = { 100, 400, 700 };
+
+    double[] nuvensY = { 50, 90, 40 };
+
+    double[] nuvensVel = { 0.2, 0.4, 0.3 };
+
+    // ================= ESTRADA =================
+    double estradaOffset = 0;
+
     // ================= MÚSICA =================
     Clip musica;
 
@@ -30,7 +39,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
     int opcaoSettings = 0;
 
     String[] opcoesSettings = {
-            "Mute Music: OFF"
+            "Mutar Música: NÃO"
     };
 
     // ================= ESTADOS =================
@@ -44,7 +53,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
     Estado estadoAtual = Estado.MENU;
 
-    // ================= SCORE =================
+    // ================= PONTUAÇÃO =================
     int pontuacao = 0;
 
     long ultimoPontoTempo = System.currentTimeMillis();
@@ -62,15 +71,15 @@ public class Main extends JPanel implements ActionListener, KeyListener {
     int opcaoMenu = 0;
 
     String[] menuPrincipal = {
-            "Play",
-            "Settings"
+            "Jogar",
+            "Configurações"
     };
 
     int opcaoPersonagem = 0;
 
     String[] personagens = {
             "Elefante",
-            "Lawyer"
+            "Advogado"
     };
 
     public Main() {
@@ -93,10 +102,8 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         try {
 
-            AudioInputStream audio =
-                    AudioSystem.getAudioInputStream(
-                            new File("0518(1).WAV")
-                    );
+            AudioInputStream audio = AudioSystem.getAudioInputStream(
+                    new File("0518(1).WAV"));
 
             musica = AudioSystem.getClip();
 
@@ -110,8 +117,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
             System.out.println(
                     "Erro ao tocar música: "
-                            + e.getMessage()
-            );
+                            + e.getMessage());
         }
     }
 
@@ -119,8 +125,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         if (musicaMutada) {
 
-            opcoesSettings[0] =
-                    "Mute Music: ON";
+            opcoesSettings[0] = "Mutar Música: SIM";
 
             if (musica != null) {
 
@@ -129,8 +134,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         } else {
 
-            opcoesSettings[0] =
-                    "Mute Music: OFF";
+            opcoesSettings[0] = "Mutar Música: NÃO";
 
             if (musica != null &&
                     !musica.isRunning()) {
@@ -145,7 +149,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
     // ================= INICIAR JOGO =================
     void iniciarJogo() {
 
-        jogador = new Elefante(100, 236);
+        jogador = new Elefante(100, 250);
 
         entidades = new ArrayList<>();
 
@@ -195,8 +199,23 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         repaint();
     }
 
-    // ================= UPDATE =================
+    // ================= ATUALIZAR =================
     void atualizar() {
+
+        // ================= ATUALIZAR NUVENS =================
+        for (int i = 0; i < nuvensX.length; i++) {
+            nuvensX[i] -= nuvensVel[i] * multiplicadorVelocidade;
+            if (nuvensX[i] < -120) {
+                nuvensX[i] = 800 + random.nextInt(100);
+                nuvensY[i] = 30 + random.nextInt(80);
+            }
+        }
+
+        // ================= ATUALIZAR ESTRADA =================
+        estradaOffset -= 5 * multiplicadorVelocidade;
+        if (estradaOffset < -80) {
+            estradaOffset += 80;
+        }
 
         long tempoAtual = System.currentTimeMillis();
 
@@ -206,21 +225,18 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         if (segundos <= 10) {
 
-            multiplicadorVelocidade =
-                    1.0 + (segundos / 10.0);
+            multiplicadorVelocidade = 1.0 + (segundos / 10.0);
 
         } else if (segundos <= 60) {
 
-            multiplicadorVelocidade =
-                    2.0 + ((segundos - 10) / 50.0) * 2.0;
+            multiplicadorVelocidade = 2.0 + ((segundos - 10) / 50.0) * 2.0;
 
         } else {
 
-            multiplicadorVelocidade =
-                    4.0 + Math.log(segundos - 59) * 0.7;
+            multiplicadorVelocidade = 4.0 + Math.log(segundos - 59) * 0.7;
         }
 
-        // ================= SCORE =================
+        // ================= PONTUAÇÃO =================
 
         if (tempoAtual - ultimoPontoTempo >= 1000) {
 
@@ -254,9 +270,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
                         new Obstaculo(
                                 800,
                                 300,
-                                multiplicadorVelocidade
-                        )
-                );
+                                multiplicadorVelocidade));
             }
         }
 
@@ -268,9 +282,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
                     new Raio(
                             800,
                             250,
-                            multiplicadorVelocidade
-                    )
-            );
+                            multiplicadorVelocidade));
         }
 
         Iterator<Entidade> it = entidades.iterator();
@@ -341,7 +353,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             return;
         }
 
-        // ================= SELECT =================
+        // ================= SELEÇÃO =================
 
         if (estadoAtual == Estado.CHARACTER_SELECT) {
 
@@ -350,7 +362,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             return;
         }
 
-        // ================= SETTINGS =================
+        // ================= CONFIGURAÇÕES =================
 
         if (estadoAtual == Estado.SETTINGS) {
 
@@ -359,7 +371,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             return;
         }
 
-        // ================= LAWYER =================
+        // ================= ADVOGADO =================
 
         if (estadoAtual == Estado.LAWYER_DEVELOPING) {
 
@@ -384,7 +396,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         g.setFont(new Font("Arial", Font.BOLD, 42));
 
-        g.drawString("ELEPHANT RUN", 240, 100);
+        g.drawString("CORRIDA DO ELEFANTE", 180, 100);
 
         g.setFont(new Font("Arial", Font.BOLD, 28));
 
@@ -402,8 +414,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             g.drawString(
                     menuPrincipal[i],
                     340,
-                    180 + (i * 60)
-            );
+                    180 + (i * 60));
         }
 
         g.setFont(new Font("Arial", Font.PLAIN, 18));
@@ -413,11 +424,10 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         g.drawString(
                 "Use ↑ ↓ e ENTER",
                 300,
-                340
-        );
+                340);
     }
 
-    // ================= SELECT =================
+    // ================= SELEÇÃO =================
     void desenharSelecao(Graphics g) {
 
         g.setColor(new Color(20, 20, 20));
@@ -429,10 +439,9 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         g.setFont(new Font("Arial", Font.BOLD, 36));
 
         g.drawString(
-                "Choose Character",
-                240,
-                90
-        );
+                "Escolha o Personagem",
+                210,
+                90);
 
         g.setFont(new Font("Arial", Font.BOLD, 28));
 
@@ -450,8 +459,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             g.drawString(
                     personagens[i],
                     320,
-                    180 + (i * 60)
-            );
+                    180 + (i * 60));
         }
 
         g.setFont(new Font("Arial", Font.PLAIN, 18));
@@ -461,11 +469,10 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         g.drawString(
                 "ESC para voltar",
                 310,
-                340
-        );
+                340);
     }
 
-    // ================= SETTINGS =================
+    // ================= CONFIGURAÇÕES =================
     void desenharSettings(Graphics g) {
 
         g.setColor(Color.DARK_GRAY);
@@ -476,7 +483,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
         g.setFont(new Font("Arial", Font.BOLD, 40));
 
-        g.drawString("SETTINGS", 270, 100);
+        g.drawString("CONFIGURAÇÕES", 250, 100);
 
         g.setFont(new Font("Arial", Font.BOLD, 26));
 
@@ -494,8 +501,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
             g.drawString(
                     opcoesSettings[i],
                     250,
-                    190 + (i * 50)
-            );
+                    190 + (i * 50));
         }
 
         g.setFont(new Font("Arial", Font.PLAIN, 18));
@@ -505,17 +511,15 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         g.drawString(
                 "ENTER para alterar",
                 270,
-                300
-        );
+                300);
 
         g.drawString(
                 "ESC para voltar",
                 290,
-                330
-        );
+                330);
     }
 
-    // ================= LAWYER =================
+    // ================= ADVOGADO =================
     void desenharLawyer(Graphics g) {
 
         g.setColor(Color.BLACK);
@@ -527,40 +531,114 @@ public class Main extends JPanel implements ActionListener, KeyListener {
         g.setFont(new Font("Arial", Font.BOLD, 42));
 
         g.drawString(
-                "Developing...",
-                240,
-                180
-        );
+                "Desenvolvendo...",
+                230,
+                180);
 
         g.setFont(new Font("Arial", Font.PLAIN, 24));
 
         g.setColor(Color.WHITE);
 
         g.drawString(
-                "Press ESC para voltar",
-                250,
-                250
-        );
+                "Pressione ESC para voltar",
+                240,
+                250);
     }
 
     // ================= JOGO =================
     void desenharJogo(Graphics g) {
 
-        g.setColor(new Color(198, 226, 255));
+        Graphics2D g2d = (Graphics2D) g;
 
-        g.fillRect(0, 0, 800, 400);
+        // Sky Gradient (Gradiente do Céu)
+        GradientPaint gradienteCeu = new GradientPaint(
+                0, 0, new Color(50, 130, 245),
+                0, 340, new Color(175, 215, 255));
+        g2d.setPaint(gradienteCeu);
+        g2d.fillRect(0, 0, 800, 340);
 
-        g.setColor(new Color(60, 60, 60));
+        // Stylized Sun (Sol Estilizado Estático)
+        int sunCx = 670;
+        int sunCy = 70;
+        int rCore = 28;
+        int rOuter = 46;
+        int numRays = 12;
+        double rotationOffset = 0;
 
+        // Draw Ray Polygons (Desenha os Raios de Sol)
+        for (int i = 0; i < numRays; i++) {
+            double angle = i * (2 * Math.PI / numRays) + rotationOffset;
+            double angleLeft = angle - (Math.PI / 24);
+            double angleRight = angle + (Math.PI / 24);
+
+            int[] rx = {
+                    (int) (sunCx + rOuter * Math.cos(angle)),
+                    (int) (sunCx + rCore * Math.cos(angleLeft)),
+                    (int) (sunCx + rCore * Math.cos(angleRight))
+            };
+            int[] ry = {
+                    (int) (sunCy + rOuter * Math.sin(angle)),
+                    (int) (sunCy + rCore * Math.sin(angleLeft)),
+                    (int) (sunCy + rCore * Math.sin(angleRight))
+            };
+
+            // Ray fill (Preenchimento do Raio - Amarelo/Laranja)
+            g.setColor(new Color(255, 180, 0));
+            g.fillPolygon(rx, ry, 3);
+
+            // Ray outline (Contorno do Raio)
+            g.setColor(Color.BLACK);
+            g.drawPolygon(rx, ry, 3);
+        }
+
+        // Sun Glow Layer (Brilho do Sol)
+        g.setColor(new Color(255, 140, 0, 100)); // transparent orange glow
+        g.fillOval(sunCx - rCore - 8, sunCy - rCore - 8, (rCore + 8) * 2, (rCore + 8) * 2);
+
+        // Sun Core fill (Núcleo do Sol - Laranja)
+        g.setColor(new Color(255, 100, 0));
+        g.fillOval(sunCx - rCore, sunCy - rCore, rCore * 2, rCore * 2);
+
+        // Sun Core outline (Contorno do Núcleo)
+        g.setColor(Color.BLACK);
+        g.drawOval(sunCx - rCore, sunCy - rCore, rCore * 2, rCore * 2);
+
+        // Moving Clouds (Nuvens)
+        for (int i = 0; i < nuvensX.length; i++) {
+            int cx = (int) nuvensX[i];
+            int cy = (int) nuvensY[i];
+
+            // Cloud Shadow (Sombra da Nuvem)
+            g.setColor(new Color(225, 235, 250, 160));
+            g.fillOval(cx - 2, cy + 12, 54, 30);
+            g.fillOval(cx + 18, cy + 2, 64, 40);
+            g.fillOval(cx + 48, cy + 12, 44, 30);
+            g.fillOval(cx + 8, cy + 22, 84, 20);
+
+            // Cloud Body (Corpo da Nuvem)
+            g.setColor(new Color(255, 255, 255, 230));
+            g.fillOval(cx, cy + 10, 50, 30);
+            g.fillOval(cx + 20, cy, 60, 40);
+            g.fillOval(cx + 50, cy + 10, 40, 30);
+            g.fillOval(cx + 10, cy + 20, 80, 20);
+        }
+
+        // Road Ground (Chão de Estrada)
+        g.setColor(new Color(50, 50, 50));
         g.fillRect(0, 340, 800, 60);
 
+        // White solid top road border (Borda Superior da Estrada)
         g.setColor(Color.WHITE);
-
         g.drawLine(0, 340, 800, 340);
+
+        // Scrolling Road Stripes (Faixas da Estrada Animadas)
+        for (int rx = (int) estradaOffset; rx < 800; rx += 80) {
+            g.fillRect(rx, 368, 40, 4);
+        }
 
         g.setFont(new Font("Arial", Font.BOLD, 24));
 
-        g.drawString("Score: " + pontuacao, 20, 40);
+        g.drawString("Pontuação: " + pontuacao, 20, 40);
 
         g.setFont(new Font("Arial", Font.PLAIN, 18));
 
@@ -568,8 +646,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
                 "Velocidade: x"
                         + String.format("%.1f", multiplicadorVelocidade),
                 20,
-                70
-        );
+                70);
 
         for (Entidade e : entidades) {
 
@@ -587,8 +664,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
                             + (3 - jogador.blocosAtravessados)
                             + " blocos restantes",
                     20,
-                    100
-            );
+                    100);
         }
 
         if (!rodando) {
@@ -597,15 +673,14 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
             g.setFont(new Font("Arial", Font.BOLD, 32));
 
-            g.drawString("GAME OVER", 280, 170);
+            g.drawString("FIM DE JOGO", 280, 170);
 
             g.setFont(new Font("Arial", Font.PLAIN, 22));
 
             g.drawString(
-                    "Press SPACE to Restart",
-                    235,
-                    220
-            );
+                    "Pressione ESPAÇO para Reiniciar",
+                    220,
+                    220);
         }
     }
 
@@ -659,8 +734,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
                 if (opcaoPersonagem < 0) {
 
-                    opcaoPersonagem =
-                            personagens.length - 1;
+                    opcaoPersonagem = personagens.length - 1;
                 }
             }
 
@@ -683,8 +757,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
                 if (opcaoPersonagem == 1) {
 
-                    estadoAtual =
-                            Estado.LAWYER_DEVELOPING;
+                    estadoAtual = Estado.LAWYER_DEVELOPING;
                 }
             }
 
@@ -702,8 +775,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
                 if (opcaoSettings < 0) {
 
-                    opcaoSettings =
-                            opcoesSettings.length - 1;
+                    opcaoSettings = opcoesSettings.length - 1;
                 }
             }
 
@@ -711,8 +783,7 @@ public class Main extends JPanel implements ActionListener, KeyListener {
 
                 opcaoSettings++;
 
-                if (opcaoSettings >=
-                        opcoesSettings.length) {
+                if (opcaoSettings >= opcoesSettings.length) {
 
                     opcaoSettings = 0;
                 }
@@ -759,10 +830,12 @@ public class Main extends JPanel implements ActionListener, KeyListener {
     }
 
     @Override
-    public void keyReleased(KeyEvent e) {}
+    public void keyReleased(KeyEvent e) {
+    }
 
     @Override
-    public void keyTyped(KeyEvent e) {}
+    public void keyTyped(KeyEvent e) {
+    }
 }
 
 // ================= ENTIDADE =================
@@ -788,8 +861,7 @@ abstract class Entidade {
                 x,
                 y,
                 largura,
-                altura
-        );
+                altura);
     }
 }
 
@@ -824,9 +896,9 @@ class Personagem extends Entidade {
 
         y += velY;
 
-        if (y >= 236) {
+        if (y >= 250) {
 
-            y = 236;
+            y = 250;
 
             velY = 0;
 
@@ -852,6 +924,8 @@ class Elefante extends Personagem {
 
     int blocosAtravessados = 0;
 
+    int ticks = 0;
+
     Elefante(int x, int y) {
 
         super(x, y);
@@ -867,69 +941,176 @@ class Elefante extends Personagem {
     }
 
     @Override
+    void atualizar() {
+        super.atualizar();
+        if (noChao) {
+            ticks++;
+        } else {
+            ticks = 0;
+        }
+    }
+
+    @Override
     Rectangle getBounds() {
 
         return new Rectangle(
                 x + 18,
                 y + 18,
                 52,
-                70
-        );
+                70);
     }
 
     @Override
     void desenhar(Graphics g) {
 
-        g.setColor(new Color(170, 175, 195));
+        int offsetPerna1 = 24;
+        int offsetPerna2 = 54;
+        int offsetCaudaX = 10;
+        int offsetTufoX = 9;
+        int offsetTrombaH = 24;
+        int offsetPontaX = 58;
+        int offsetPontaY = 58;
+        int offsetPontaW = 20;
 
-        g.fillRect(x + 18, y + 18, 52, 44);
+        if (noChao) {
+            if ((ticks / 8) % 2 == 0) {
+                offsetPerna1 = 20;
+                offsetPerna2 = 58;
+                offsetCaudaX = 10;
+                offsetTufoX = 9;
+                offsetTrombaH = 24;
+                offsetPontaX = 58;
+                offsetPontaY = 58;
+                offsetPontaW = 20;
+            } else {
+                offsetPerna1 = 28;
+                offsetPerna2 = 50;
+                offsetCaudaX = 6;
+                offsetTufoX = 5;
+                offsetTrombaH = 20;
+                offsetPontaX = 60;
+                offsetPontaY = 54;
+                offsetPontaW = 20;
+            }
+        } else {
+            offsetPerna1 = 20;
+            offsetPerna2 = 50;
+            offsetCaudaX = 10;
+            offsetTufoX = 9;
+            offsetTrombaH = 24;
+            offsetPontaX = 58;
+            offsetPontaY = 58;
+            offsetPontaW = 20;
+        }
 
-        g.fillRect(x + 56, y + 22, 28, 32);
-
+        // ================= CAUDA =================
+        // Cor da base da cauda (cinza ligeiramente mais escuro que o corpo principal)
         g.setColor(new Color(150, 155, 175));
+        // Conexão horizontal ao corpo (começa em offsetCaudaX e conecta ao corpo em
+        // x+18)
+        g.fillRect(x + offsetCaudaX, y + 34, 18 - offsetCaudaX, 4);
+        // Parte vertical pendente da cauda
+        g.fillRect(x + offsetCaudaX, y + 38, 4, 16);
+        // Tufo da cauda (pelo preto no final da cauda)
+        g.setColor(new Color(80, 80, 80));
+        g.fillRect(x + offsetTufoX, y + 54, 6, 8);
 
-        g.fillRect(x + 40, y + 10, 20, 34);
-
-        g.setColor(new Color(170, 175, 195));
-
-        g.fillRect(x + 24, y + 56, 14, 34);
-
-        g.fillRect(x + 54, y + 56, 14, 34);
-
-        g.fillRect(x + 66, y + 44, 12, 24);
-
-        g.fillRect(x + 58, y + 58, 20, 10);
-
+        // Contornos da Cauda
         g.setColor(Color.BLACK);
+        g.drawRect(x + offsetCaudaX, y + 34, 18 - offsetCaudaX, 4);
+        g.drawRect(x + offsetCaudaX, y + 38, 4, 16);
+        g.drawRect(x + offsetTufoX, y + 54, 6, 8);
 
-        g.drawRect(x + 18, y + 18, 52, 44);
+        // Limpeza do contorno de sobreposição dentro da cauda
+        g.setColor(new Color(150, 155, 175));
+        g.fillRect(x + offsetCaudaX + 1, y + 35, 18 - offsetCaudaX - 2, 2);
+        g.fillRect(x + offsetCaudaX + 1, y + 37, 2, 2);
 
-        g.drawRect(x + 56, y + 22, 28, 32);
+        // ================= CORPO E CABEÇA =================
+        g.setColor(new Color(170, 175, 195));
+        // Corpo Arredondado
+        g.fillRoundRect(x + 18, y + 18, 52, 44, 16, 16);
+        // Cabeça Arredondada
+        g.fillRoundRect(x + 56, y + 22, 28, 32, 10, 10);
 
-        g.drawRect(x + 40, y + 10, 20, 34);
+        // ================= ORELHA =================
+        g.setColor(new Color(150, 155, 175));
+        // Orelha Arredondada
+        g.fillRoundRect(x + 36, y + 10, 22, 34, 12, 12);
 
-        g.drawRect(x + 24, y + 56, 14, 34);
+        // ================= PERNAS =================
+        g.setColor(new Color(170, 175, 195));
+        // Perna 1
+        g.fillRect(x + offsetPerna1, y + 56, 14, 34);
+        // Perna 2
+        g.fillRect(x + offsetPerna2, y + 56, 14, 34);
 
-        g.drawRect(x + 54, y + 56, 14, 34);
+        // ================= TROMBA E QUEIXO =================
+        g.fillRect(x + 66, y + 44, 12, offsetTrombaH);
+        g.fillRect(x + offsetPontaX, y + offsetPontaY, offsetPontaW, 10);
 
-        g.drawRect(x + 66, y + 44, 12, 24);
+        // ================= UNHAS DAS PATAS =================
+        g.setColor(Color.WHITE);
+        // Unhas para a Perna 1
+        g.fillRect(x + offsetPerna1 + 2, y + 84, 4, 6);
+        g.fillRect(x + offsetPerna1 + 8, y + 84, 4, 6);
+        // Unhas para a Perna 2
+        g.fillRect(x + offsetPerna2 + 2, y + 84, 4, 6);
+        g.fillRect(x + offsetPerna2 + 8, y + 84, 4, 6);
 
-        g.drawRect(x + 58, y + 58, 20, 10);
+        // ================= MARFIM =================
+        g.setColor(Color.WHITE);
+        g.fillRect(x + 74, y + 44, 10, 6);
+        g.fillRect(x + 80, y + 38, 6, 6);
 
-        g.fillRect(x + 70, y + 30, 4, 8);
+        // ================= CONTORNOS =================
+        g.setColor(Color.BLACK);
+        g.drawRoundRect(x + 18, y + 18, 52, 44, 16, 16);
+        g.drawRoundRect(x + 56, y + 22, 28, 32, 10, 10);
+        g.drawRoundRect(x + 36, y + 10, 22, 34, 12, 12);
 
+        g.drawRect(x + offsetPerna1, y + 56, 14, 34);
+        g.drawRect(x + offsetPerna2, y + 56, 14, 34);
+
+        g.drawRect(x + 66, y + 44, 12, offsetTrombaH);
+        g.drawRect(x + offsetPontaX, y + offsetPontaY, offsetPontaW, 10);
+
+        // Contornos das Unhas
+        g.drawRect(x + offsetPerna1 + 2, y + 84, 4, 6);
+        g.drawRect(x + offsetPerna1 + 8, y + 84, 4, 6);
+        g.drawRect(x + offsetPerna2 + 2, y + 84, 4, 6);
+        g.drawRect(x + offsetPerna2 + 8, y + 84, 4, 6);
+
+        // Contornos do Marfim
+        g.drawRect(x + 74, y + 44, 10, 6);
+        g.drawRect(x + 80, y + 38, 6, 6);
+
+        // Limpeza do Contorno do Marfim
+        g.setColor(Color.WHITE);
+        g.fillRect(x + 75, y + 45, 8, 4);
+        g.fillRect(x + 79, y + 40, 2, 8);
+
+        // ================= OLHO EXPRESSIVO =================
+        // Branco do Olho
+        g.setColor(Color.WHITE);
+        g.fillRect(x + 70, y + 28, 6, 8);
+        // Contorno do Olho
+        g.setColor(Color.BLACK);
+        g.drawRect(x + 70, y + 28, 6, 8);
+        // Pupila do Olho
+        g.fillRect(x + 73, y + 30, 3, 4);
+
+        // ================= ESCUDO DE INTANGIBILIDADE =================
         if (intangivel) {
 
             g.setColor(
-                    new Color(0, 255, 255, 80)
-            );
+                    new Color(0, 255, 255, 80));
 
             g.fillOval(
                     x - 10,
                     y - 10,
                     120,
-                    120
-            );
+                    120);
         }
     }
 }
@@ -942,8 +1123,7 @@ class Obstaculo extends Entidade {
     Obstaculo(
             int x,
             int y,
-            double multiplicador
-    ) {
+            double multiplicador) {
 
         super(x, y, 30, 40);
 
@@ -959,13 +1139,38 @@ class Obstaculo extends Entidade {
     @Override
     void desenhar(Graphics g) {
 
-        g.setColor(new Color(200, 40, 40));
+        // ================= BASE DO CONE =================
+        g.setColor(new Color(40, 40, 40)); // Base de carvão escuro
+        g.fillRect(x, y + 34, 30, 6);
 
-        g.fillRect(x, y, largura, altura);
-
+        // Contorno da Base
         g.setColor(Color.BLACK);
+        g.drawRect(x, y + 34, 30, 6);
 
-        g.drawRect(x, y, largura, altura);
+        // ================= CORPO DO CONE =================
+        // Polígono Principal do Corpo Laranja
+        int[] coneX = { x + 11, x + 19, x + 27, x + 3 };
+        int[] coneY = { y, y, y + 34, y + 34 };
+
+        g.setColor(new Color(255, 80, 0)); // Laranja de Segurança
+        g.fillPolygon(coneX, coneY, 4);
+
+        // Faixa Branca Refletiva
+        int[] bandX = { x + 8, x + 22, x + 24, x + 6 };
+        int[] bandY = { y + 12, y + 22, y + 22, y + 12 };
+        g.setColor(Color.WHITE);
+        g.fillPolygon(bandX, bandY, 4);
+
+        // Contornos
+        g.setColor(Color.BLACK);
+        g.drawPolygon(coneX, coneY, 4);
+        g.drawPolygon(bandX, bandY, 4);
+
+        // ================= ABERTURA SUPERIOR =================
+        g.setColor(new Color(40, 40, 40));
+        g.fillOval(x + 11, y - 2, 8, 4);
+        g.setColor(Color.BLACK);
+        g.drawOval(x + 11, y - 2, 8, 4);
     }
 }
 
@@ -988,8 +1193,7 @@ class Raio extends Item {
     Raio(
             int x,
             int y,
-            double multiplicador
-    ) {
+            double multiplicador) {
 
         super(x, y);
 
@@ -1037,4 +1241,3 @@ class Raio extends Item {
         }
     }
 }
-
