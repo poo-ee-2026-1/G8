@@ -29,7 +29,7 @@ Este projeto foi desenvolvido como trabalho prático para a disciplina de **Prog
 ## 📦 Como baixar e executar
 
 1. Acesse a **página de [Releases](https://github.com/poo-ee-2026-1/G8/releases/tag/JOGOELEFANTE.2) do repositório no GitHub.
-2. Baixe o arquivo `CorridaDoElefante.jar` da última release.
+2. Baixe o arquivo `JOGO.ELEFANTE.2.jar` da última release.
 3. Execute o jogo:
    - **Clique duplo** no arquivo (se o Java estiver associado corretamente).
    - Ou via terminal:  
