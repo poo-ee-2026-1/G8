@@ -45,6 +45,9 @@ Este projeto foi desenvolvido como trabalho prático para a disciplina de **Prog
 
 
 🙏 Agradecimentos
+
+
+
 Agradecemos à professora da disciplina de POO pela orientação e incentivo ao longo do semestre, e a toda a turma de Engenharia Elétrica 2026/1 pelo ambiente colaborativo e troca de ideias.
 
 Boa diversão com a Corrida do Elefante! 🐘💨
