@@ -17,7 +17,7 @@ Este projeto foi desenvolvido como trabalho prático para a disciplina de **Prog
 - **Corrida infinita** – o cenário se move da direita para a esquerda.
 - **Obstáculos** – surgem em intervalos aleatórios; colidir com um deles encerra o jogo.
 - **Pulo** – pressione `ESPAÇO` para fazer o elefante/Advogado pular.
-- **Dificuldade crescente** – a cada 10 segundos a velocidade do jogo aumenta.
+- **Dificuldade crescente** – a velocidade do jogo aumenta sempre.
 - **Pontuação** – baseada no tempo de sobrevivência (em segundos).
 - **Áudio** – trilha sonora ambiente e efeitos sonoros de pulo e colisão (na pasta `assets`).
 - **Itens** - Tanto o elefante quanto o advogado possuem itens coletáveis próprios que dão poderes à eles.
